@@ -1,0 +1,9 @@
+.arena { color: var(--wt-muted); }
+
+.char {
+    &.correct { color: var(--wt-text); }
+    &.wrong { color: var(--wt-wrong); text-decoration: underline; }
+    &.cursor {box-shadow: inset 2px 0 0 var(--wt-accent); }
+}
+
+.debug { color: var(--wt-muted); }

@@ -1,1 +1,26 @@
-/* You can add global styles to this file, and also import other style files */
+@font-face {
+  font-family: 'Geist Pixel';
+  src: url('./fonts/GeistPixel.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --wt-font: 'Geist Pixel', sans-serif;
+  font-size: 1.5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--wt-bg);
+  color: var(--wt-text);
+  font-family: var(--wt-font);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+button { font: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
+}

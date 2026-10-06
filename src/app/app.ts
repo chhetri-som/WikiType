@@ -1,8 +1,9 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { TypingArena } from './features/typing-arena/typing-arena';
+import { ThemePicker } from './features/theme-picker/theme-picker';
 
 @Component({
-  imports: [RouterOutlet],
+  imports: [TypingArena, ThemePicker],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
