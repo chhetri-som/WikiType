@@ -1,10 +1,13 @@
+<p class="stats">
+  <span class="lead">{{ lead() }}</span>
+  <span>{{ engine.liveWpm() }} wpm</span>
+  <span>{{ engine.liveAccuracy() }}% acc</span>
+</p>
+
 <div #arena class="arena" tabindex="0" (keydown)="engine.handleKey($event)">
     @for (c of engine.chars(); track $index) {
         <span class="char" [class]="c.state" [class.cursor]="$index === engine.cursor()">{{ c.ch }}</span>
     }
 </div>
 
-<p class="debug">
-    status: {{ engine.status() }} . cursor: {{ engine.cursor() }} . keystrokes: {{ engine.log.length }}
-</p>
 <button (click)="engine.reset(); arena.focus()">Restart</button>

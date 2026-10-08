@@ -6,4 +6,10 @@
     &.cursor {box-shadow: inset 2px 0 0 var(--wt-accent); }
 }
 
-.debug { color: var(--wt-muted); }
+.stats {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--wt-muted);
+
+  .lead { color: var(--wt-accent); }
+}

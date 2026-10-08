@@ -1,0 +1,29 @@
+@let r = result();
+<section class="results">
+  <p class="sr-only" aria-live="polite">{{ summary() }}</p>
+  <div class="chart">
+    <canvas
+      baseChart
+      type="line"
+      [data]="chartData()"
+      [options]="chartOptions()"
+      role="img"
+      aria-label="Words per minute over time, with markers where mistakes were made"
+    ></canvas>
+  </div>
+
+  <dl class="cards">
+    <div class="card lead"><dt>wpm</dt><dd>{{ r.wpm }}</dd></div>
+    <div class="card"><dt>raw</dt><dd>{{ r.rawWpm }}</dd></div>
+    <div class="card"><dt>accuracy</dt><dd>{{ r.accuracy }}</dd></div>
+    <div class="card"><dt>consistency</dt><dd>{{ r.consistency }}</dd></div>
+    <div class="card"><dt>time</dt><dd>{{ timeLabel() }}</dd></div>
+    <div class="card">
+      <dt>characters</dt>
+      <dd>{{ r.chars.correct }}/{{ r.chars.wrong }}/{{ r.chars.corrected }}</dd>
+      <dd class="caption">correct / wrong / corrected</dd>
+    </div>
+  </dl>
+
+  <button type="button" class="restart" (click)="restart.emit()">Restart</button>
+</section>

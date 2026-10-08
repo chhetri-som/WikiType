@@ -1,3 +1,10 @@
-<app-theme-picker />
-<app-typing-arena />
+<main class="shell">
+  <app-theme-picker />
+  <app-mode-selector (configChange)="engine.configure($event)" />
 
+  @if (engine.result(); as r) {
+    <app-results [result]="r" (restart)="engine.reset()" />
+  } @else {
+  <app-typing-arena />
+  }
+</main>
