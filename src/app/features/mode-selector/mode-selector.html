@@ -1,5 +1,6 @@
 <div class="selector">
   <div class="modes" role="radiogroup" aria-label="Mode">
+    <span class="thumb" aria-hidden="true"></span>
     @for (m of modes; track m.id) {
       <button
         type="button"
@@ -11,40 +12,54 @@
       >{{ m.label }}</button>
     }
   </div>
+  <div class="length">
+    <div class="length-row">
+      <div class="slider" [class.disabled]="isCustom()">
+        <input
+          #range
+          type="range"
+          min="0"
+          step="1"
+          [max]="notches().length - 1"
+          [value]="index()"
+          [attr.aria-valuetext]="valueText()"
+          aria-label="Test length"
+          (input)="setIndex(range.value)"
+        >
+        <ol class="notches" aria-hidden="true">
+          @for (n of notches(); track n; let i = $index) {
+          <li [class.active]="i === index()" [style.left.%]="(i / (notches().length - 1)) * 100">{{ n }}</li>
+          }
+        </ol>
+      </div>
 
-  <div class="slider">
-    <input
-      #range
-      type="range"
-      min="0"
-      step="1"
-      [max]="notches().length - 1"
-      [value]="index()"
-      [attr.aria-valuetext]="valueText()"
-      aria-label="Test length"
-      (input)="setIndex(range.value)"
-    >
-    <ol class="notches" aria-hidden="true">
-      @for (n of notches(); track n; let i = $index) {
-        <li [class.active]="i === index()" [style.left.%]="(i / (notches().length - 1)) * 100">{{ n }}</li>
-      }
-    </ol>
+      <button
+        type="button"
+        class="custom-toggle"
+        [class.active]="isCustom()"
+        [attr.aria-pressed]="isCustom()"
+        aria-controls="custom-panel"
+        (click)="toggleCustom()"
+      >Custom</button>
+    </div>
+
+    <div id="custom-panel" class="custom-panel" [class.open]="isCustom()" [attr.inert]="isCustom() ? null : ''">
+      <div class="custom-inner">
+        <div class="custom-field">
+          <input
+            #custom
+            type="number"
+            inputmode="numeric"
+            step="1"
+            [min]="limits().min"
+            [max]="limits().max"
+            [value]="customValue()"
+            [attr.aria-label]="'Custom number of ' + unit()"
+            (change)="setCustom(custom)"
+          >
+          <span class="hint">{{ limits().min }} - {{ limits().max }} {{ unit() }}</span>
+        </div>
+      </div>
+    </div>
   </div>
-
-  @if (isCustom()) {
-    <label class="custom">
-      <input
-        #custom
-        type="number"
-        inputmode="numeric"
-        step="1"
-        [min]="limits().min"
-        [max]="limits().max"
-        [value]="customValue()"
-        [attr.aria-label]="'Custom number of ' + unit()"
-        (change)="setCustom(custom)"
-      >
-      <span class="hint">{{ limits().min }} - {{ limits().max }} {{ unit() }}</span>
-    </label>
-  }
 </div>

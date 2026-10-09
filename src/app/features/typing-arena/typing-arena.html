@@ -5,9 +5,11 @@
 </p>
 
 <div #arena class="arena" tabindex="0" (keydown)="engine.handleKey($event)">
+  <div #track class="track">
     @for (c of engine.chars(); track $index) {
-        <span class="char" [class]="c.state" [class.cursor]="$index === engine.cursor()">{{ c.ch }}</span>
+      <span class="char" [class]="c.state" [class.cursor]="$index === engine.cursor()">{{ c.ch }}</span>
     }
+  </div>
 </div>
 
-<button (click)="engine.reset(); arena.focus()">Restart</button>
+<button type="button" class="restart" (click)="engine.reset(); arena.focus()">Restart</button>

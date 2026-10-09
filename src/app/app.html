@@ -1,5 +1,5 @@
 <main class="shell">
-  <app-theme-picker />
+  <h1 class="title">WikiType</h1>
   <app-mode-selector (configChange)="engine.configure($event)" />
 
   @if (engine.result(); as r) {
@@ -7,4 +7,5 @@
   } @else {
   <app-typing-arena />
   }
+  <app-theme-picker />
 </main>

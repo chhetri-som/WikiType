@@ -17,11 +17,11 @@ export class ModeSelector {
   protected readonly modes = MODES;
   protected readonly mode = signal<Mode>(DEFAULT_CONFIG.mode);
   protected readonly index = signal(presetsFor(DEFAULT_CONFIG.mode).indexOf(configValue(DEFAULT_CONFIG)));
+  protected readonly isCustom = signal(false);
   protected readonly customValue = signal(clampCustom(DEFAULT_CONFIG.mode, configValue(DEFAULT_CONFIG)));
 
   protected readonly presets = computed(() => presetsFor(this.mode()));
-  protected readonly notches = computed(() => [...this.presets().map(String), 'Custom']);
-  protected readonly isCustom = computed(() => this.index() === this.presets().length);
+  protected readonly notches = computed(() => this.presets().map(String));
   protected readonly limits = computed(() => limitsFor(this.mode()));
   protected readonly unit = computed(() => (this.mode() === 'words' ? 'words' : 'seconds'));
   protected readonly value = computed(() => (this.isCustom() ? this.customValue() : this.presets()[this.index()]));
@@ -36,6 +36,11 @@ export class ModeSelector {
 
   protected setIndex(raw: string): void {
     this.index.set(Number(raw));
+    this.emit();
+  }
+
+  protected toggleCustom(): void {
+    this.isCustom.update(on => !on);
     this.emit();
   }
 

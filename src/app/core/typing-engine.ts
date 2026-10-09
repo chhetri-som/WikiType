@@ -11,7 +11,7 @@ const LIVE_WPM_AFTER_MS = 1000;
 export class TypingEngine {
 
     readonly config = signal<TestConfig>(DEFAULT_CONFIG);
-    readonly text = signal('The quick brown fox jumps over the lazy dog.');
+    readonly text = signal(placeholderText(wordsNeeded(DEFAULT_CONFIG)));
     readonly typed = signal('');
     readonly status = signal<Status>('idle');
     readonly elapsedMs = signal(0);

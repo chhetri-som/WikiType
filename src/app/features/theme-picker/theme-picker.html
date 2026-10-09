@@ -1,15 +1,26 @@
-<div class="picker" role="radiogroup" aria-label="Theme">
-  @for (t of theme.themes; track t.id) {
-    <button
-      type="button"
-      role="radio"
-      class="swatch"
-      [class.active]="t.id === theme.id()"
-      [attr.aria-checked]="t.id === theme.id()"
-      [style.--sw-bg]="t.tokens.bg"
-      [style.--sw-text]="t.tokens.text"
-      [style.--sw-accent]="t.tokens.accent"
-      (click)="theme.select(t.id)"
-    >{{ t.label }}</button>
-  }
+<div class="picker" (keydown.escape)="open.set(false)">
+  <button
+    type="button"
+    class="toggle"
+    [class.open]="open()"
+    aria-controls="theme-strip"
+    (click)="toggle()"
+  >Theme</button>
+  <div id="theme-strip" class="strip" [class.open]="open()" [attr.inert]="open() ? null : ''">
+    <div class="options" role="radiogroup" aria-label="Theme">
+      @for (t of theme.themes; track t.id) {
+      <button
+        type="button"
+        role="radio"
+        class="swatch"
+        [class.active]="t.id === theme.id()"
+        [attr.aria-checked]="t.id === theme.id()"
+        [style.--sw-bg]="t.tokens.bg"
+        [style.--sw-text]="t.tokens.text"
+        [style.--sw-accent]="t.tokens.accent"
+        (click)="theme.select(t.id)"
+      >{{ t.label }}</button>
+      }
+    </div>
+  </div>
 </div>

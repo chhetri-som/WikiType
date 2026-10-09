@@ -1,15 +1,62 @@
-.picker { display: flex; gap: 0.5rem; justify-content: center; margin: 1rem 0; }
+:host {
+  display: block;
+}
 
-.swatch {
-  padding: 0.35rem 0.8rem;
-  border: 2px solid transparent;
-  border-radius: 0.4rem;
+.picker {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.toggle {
+  padding: 0.2rem 0.8rem;
+  border: 2px solid var(--wt-accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wt-text);
   cursor: pointer;
   font-size: 0.85rem;
+  transition: background-color 0.25s ease;
+
+  &.open { background: var(--wt-accent); }
+  &:focus-visible { outline: 2px solid var(--wt-accent); outline-offset: 2px; }
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition: grid-template-columns 0.25s ease, opacity 0.2s ease;
+
+  &.open { grid-template-columns: 1fr; opacity: 1; }
+}
+
+.options {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-block: 0.25rem;
+  overflow: hidden;
+}
+
+.swatch {
+  flex: none;
+  padding: 0.2rem 0.8rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
   background: var(--sw-bg);
   color: var(--sw-text);
   box-shadow: inset 0 -3px 0 var(--sw-accent);
 
   &.active { border-color: var(--sw-accent); }
   &:focus-visible { outline: 2px solid var(--wt-accent); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle, .strip { transition: none; }
 }

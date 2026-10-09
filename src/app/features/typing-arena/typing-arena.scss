@@ -1,15 +1,37 @@
-.arena { color: var(--wt-muted); }
-
-.char {
-    &.correct { color: var(--wt-text); }
-    &.wrong { color: var(--wt-wrong); text-decoration: underline; }
-    &.cursor {box-shadow: inset 2px 0 0 var(--wt-accent); }
-}
-
 .stats {
   display: flex;
   gap: 1.5rem;
   color: var(--wt-muted);
 
   .lead { color: var(--wt-accent); }
+}
+
+.arena {
+  --lines: 5;
+  --line-height: 1.6;
+  height: calc(var(--lines) * var(--line-height) * 1em);
+  padding-inline: 0.5rem;
+  overflow: hidden;
+  color: var(--wt-muted);
+  line-height: var(--line-height);
+  white-space: pre-wrap;
+}
+
+.track {
+  will-change: transform;
+  transition: transform 0.2s ease-out;
+}
+
+.char {
+  &.correct { color: var(--wt-text); }
+  &.wrong { color: var(--wt-wrong); text-decoration: underline; }
+  &.cursor {box-shadow: inset 2px 0 0 var(--wt-accent); }
+}
+
+.restart {
+  margin-top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { transition: none; }
 }
