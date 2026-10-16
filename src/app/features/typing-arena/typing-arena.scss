@@ -9,6 +9,7 @@
 .arena {
   --lines: 5;
   --line-height: 1.6;
+  position: relative;
   height: calc(var(--lines) * var(--line-height) * 1em);
   padding-inline: 0.5rem;
   overflow: hidden;
@@ -29,7 +30,33 @@
   &.cursor {box-shadow: inset 2px 0 0 var(--wt-accent); }
 }
 
-.restart {
+.notice {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--wt-muted);
+}
+
+.error {
+  margin: 0.75rem 0 0;
+  font-size: 0.6rem;
+  color: var(--wt-wrong);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--wt-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
   margin-top: 1rem;
 }
 

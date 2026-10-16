@@ -1,7 +1,8 @@
-import { Service, computed, signal } from '@angular/core';
+import { Service, computed, inject, signal } from '@angular/core';
 import { buildResult, wpm } from './metrics';
-import { CharView, Keystroke, Status, TestConfig, TestResult } from './models';
+import { CharView, Keystroke, Passage, Status, TestConfig, TestResult } from './models';
 import { DEFAULT_CONFIG, wordsNeeded } from './modes';
+import { PassageError, PassageService, PassageSource } from './passage.service';
 import { placeholderText } from './placeholder-text';
 
 const TICK_MS = 100;
@@ -11,7 +12,10 @@ const LIVE_WPM_AFTER_MS = 1000;
 export class TypingEngine {
 
     readonly config = signal<TestConfig>(DEFAULT_CONFIG);
-    readonly text = signal(placeholderText(wordsNeeded(DEFAULT_CONFIG)));
+    readonly text = signal('');
+    readonly passage = signal<Passage | null>(null);
+    readonly loading = signal(false);
+    readonly error = signal<string | null>(null);
     readonly typed = signal('');
     readonly status = signal<Status>('idle');
     readonly elapsedMs = signal(0);
@@ -53,10 +57,15 @@ export class TypingEngine {
     });
 
     log: Keystroke[] = [];
+    private readonly passages = inject(PassageService);
+    private requestId = 0;
+    private source: PassageSource | null = null;
+    private controller: AbortController | null = null;
     private startTime = 0;
     private timer: ReturnType<typeof setInterval> | null = null;
 
     handleKey(e: KeyboardEvent): void {
+        if (this.loading() || this.text().length === 0) return;
         if (this.status() === 'finished') return;
         if (e.ctrlKey || e.metaKey || e.altKey) return;
 
@@ -102,8 +111,16 @@ export class TypingEngine {
 
     configure(config: TestConfig): void {
       this.config.set(config);
-      // todo: replace with PassageService
-      this.reset(placeholderText(wordsNeeded(config)));
+      if (this.loading()) return;
+      if (this.source) {
+        this.applyPassage(this.passages.assemblePassage(this.source, config));
+      } else {
+        this.reset(placeholderText(wordsNeeded(config)));
+      }
+    }
+
+    newPassage(): void {
+      void this.loadPassage();
     }
 
     reset(text = this.text()): void {
@@ -119,11 +136,47 @@ export class TypingEngine {
     }
 
     // helpers
+    private applyPassage(passage: Passage): void {
+      this.passage.set(passage);
+      this.reset(passage.text);
+    }
+
+    private async loadPassage(): Promise<void> {
+      this.controller?.abort();
+      const controller = new AbortController();
+      this.controller = controller;
+      const id = ++this.requestId;
+
+      this.source = null;
+      this.reset('');
+      this.passage.set(null);
+      this.error.set(null);
+      this.loading.set(true);
+
+      try {
+        const source = await this.passages.fetchSource(this.config(), controller.signal);
+        if (id !== this.requestId) return;
+        this.source = source;
+        this.applyPassage(this.passages.assemblePassage(source, this.config()));
+      } catch (err) {
+        if (id !== this.requestId) return;
+        console.warn('Passage load failed, using sample text', err);
+        this.error.set(
+          err instanceof PassageError && err.kind === 'quality'
+            ? "Couldn't find a suitable article, so this is a sample text."
+            : "Couldn't reach Wikipedia, so this is a sample text.",
+        );
+        this.reset(placeholderText(wordsNeeded(this.config())));
+      } finally {
+        if (id === this.requestId) this.loading.set(false);
+      }
+    }
+
     private finish(durationMs: number): void {
       this.stopTicker();
       this.elapsedMs.set(durationMs);
       this.status.set('finished');
-      this.result.set(buildResult(this.config(), this.log, durationMs));
+      this.result.set(buildResult(this.config(), this.log, durationMs, this.passage()));
     }
 
     private startTicker(): void {

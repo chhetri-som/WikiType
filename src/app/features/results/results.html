@@ -25,5 +25,8 @@
     </div>
   </dl>
 
-  <button type="button" class="restart" (click)="restart.emit()">Restart</button>
+  <div class="actions">
+  <button type="button" class="pill-button" (click)="restart.emit()">Restart</button>
+  <button type="button" class="pill-button" (click)="newPassage.emit()">New</button>
+  </div>
 </section>

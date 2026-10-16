@@ -1,11 +1,11 @@
-const NOISE_SELECTORS = [
+const NOISE_SELECTORS: readonly string[] = [
   'sup.reference', 'sup.noprint', '.mw-editsection', '.mw-heading', '.mw-cite-backlink',
   'table', 'figure', '.thumb', '.gallery',
   '.hatnote', '.shortdescription', '.navbox', '.sidebar', '.infobox', '.ambox', '.metadata',
   '.reflist', '.refbegin', '.mw-references-wrap', '.sistersitebox', '.noprint',
   '.mw-empty-elt', '.toc', '#toc', '.mwe-math-element', 'math',
   'style', 'script', 'ul', 'ol', 'dl',
-].join('.');
+];
 
 const MIN_WORDS = 15;
 const MIN_LETTER_RATIO = 0.7;
@@ -64,7 +64,9 @@ export interface CleanedArticle {
 
 export function cleanArticle(html: string): CleanedArticle {
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    doc.querySelectorAll(NOISE_SELECTORS).forEach(n => n.remove());
+    for (const selector of NOISE_SELECTORS) {
+        doc.querySelectorAll(selector).forEach(n => n.remove());
+    }
 
     const paragraphs: string[] = [];
     let total = 0;

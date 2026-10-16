@@ -14,4 +14,8 @@ import { Results } from './features/results/results';
 export class App {
   protected readonly title = signal('wikitype');
   protected readonly engine = inject(TypingEngine);
+
+  constructor() {
+    this.engine.newPassage();
+  }
 }

@@ -3,7 +3,7 @@
   <app-mode-selector (configChange)="engine.configure($event)" />
 
   @if (engine.result(); as r) {
-    <app-results [result]="r" (restart)="engine.reset()" />
+    <app-results [result]="r" (restart)="engine.reset()" (newPassage)="engine.newPassage()"/>
   } @else {
   <app-typing-arena />
   }

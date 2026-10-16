@@ -4,7 +4,10 @@
   <span>{{ engine.liveAccuracy() }}% acc</span>
 </p>
 
-<div #arena class="arena" tabindex="0" (keydown)="engine.handleKey($event)">
+<div #arena class="arena" tabindex="0" [attr.aria-busy]="engine.loading()" (keydown)="engine.handleKey($event)">
+  @if (engine.loading()) {
+    <p class="notice" role="status">Finding an article from Wikipedia...</p>
+  }
   <div #track class="track">
     @for (c of engine.chars(); track $index) {
       <span class="char" [class]="c.state" [class.cursor]="$index === engine.cursor()">{{ c.ch }}</span>
@@ -12,4 +15,15 @@
   </div>
 </div>
 
-<button type="button" class="restart" (click)="engine.reset(); arena.focus()">Restart</button>
+@if (engine.error(); as message) {
+  <p class="error" role="alert">
+    {{ message  }}
+    <button type="button" class="link" (click)="engine.newPassage(); arena.focus()">Try again</button>
+  </p>
+}
+
+<div class="actions">
+  <button type="button" class="pill-button" (click)="engine.reset(); arena.focus()">Restart</button>
+  <button type="button" class="pill-button" (click)="engine.newPassage(); arena.focus()">New</button>
+</div>
+

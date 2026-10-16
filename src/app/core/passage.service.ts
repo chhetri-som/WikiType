@@ -19,7 +19,7 @@ export class PassageError extends Error {
     }
 }
 
-interface Candidate {
+export interface PassageSource {
     summary: WikiSummary;
     article: WikiArticle;
     paragraphs: string[];
@@ -38,7 +38,7 @@ function run<T>(source: Observable<T>, signal?: AbortSignal): Promise<T> {
     return firstValueFrom(race(source, aborted$));
 }
 
-function isBetter(a: Candidate, b: Candidate | null): boolean {
+function isBetter(a: PassageSource, b: PassageSource | null): boolean {
     if (!b) return true;
     const aClean = a.nonAsciiRatio <= QUALITY.maxNonAsciiRatio;
     const bClean = b.nonAsciiRatio <= QUALITY.maxNonAsciiRatio;
@@ -46,7 +46,7 @@ function isBetter(a: Candidate, b: Candidate | null): boolean {
     return a.wordCount > a.wordCount;
 }
 
-function toPassage(c: Candidate, config: TestConfig): Passage {
+function toPassage(c: PassageSource, config: TestConfig): Passage {
     return {
         text: assemble(c.paragraphs, wordsNeeded(config), { allowShorter: config.mode === 'words'}),
         title: c.summary.title,
@@ -60,32 +60,51 @@ function toPassage(c: Candidate, config: TestConfig): Passage {
 @Service()
 export class PassageService {
     private readonly wikipedia = inject(WikipediaService);
-    async getPassage(config: TestConfig, signal?: AbortSignal): Promise<Passage> {
-        let best: Candidate | null = null;
+    async fetchSource(config: TestConfig, signal?: AbortSignal): Promise<PassageSource> {
+        let best: PassageSource | null = null;
         let lastError: unknown = null;
 
         for (let attempt = 0; attempt < QUALITY.maxAttempts; attempt++ ) {
             signal?.throwIfAborted();
             try {
                 const summary = await run(this.wikipedia.randomSummary(), signal);
-                if (checkSummary(summary)) continue;
+                console.debug(`[passage] attempt ${attempt + 1}: summary`, summary.title, summary.type);
+                const rejected = checkSummary(summary);
+                if (rejected) {
+                    console.debug(`[passage] rejected "${summary.title}": ${rejected}`);
+                    continue;
+                }
                 const article = await run(this.wikipedia.article(summary.title), signal);
                 const { paragraphs, nonAsciiRatio } = cleanArticle(article.html);
-                const candidate: Candidate = {
+                const candidate: PassageSource = {
                     summary, article, paragraphs, nonAsciiRatio, wordCount: countWords(paragraphs),
                 };
 
-                if (checkArticle(candidate, config) === null) return toPassage(candidate, config);
+                const reason = checkArticle(candidate, config);
+                console.debug(
+                    `[passage] "${summary.title}": ${candidate.wordCount} words, non-ASCII ${(nonAsciiRatio * 100).toFixed(1)}% ->`,
+                    reason ?? 'accepted',
+                );
+                if (reason === null) return candidate;
                 if (candidate.wordCount > 0 && isBetter(candidate, best)) best = candidate;
             } catch (err) {
                 if (signal?.aborted) throw err;
                 lastError = err;
+                console.warn(`[passage] attempt ${attempt + 1} failed`, err);
             }
         }
 
-        if (best) return toPassage(best, config);
+        if (best) return best;
         throw lastError
             ? new PassageError('Could not reach Wikipedia.', 'network', { cause: lastError })
             : new PassageError('No suitable article found.', 'quality');
+    }
+    
+    assemblePassage(source: PassageSource, config: TestConfig): Passage {
+        return toPassage(source, config);
+    }
+
+    async getPassage(config: TestConfig, signal?: AbortSignal): Promise<Passage> {
+        return this.assemblePassage(await this.fetchSource(config, signal), config);
     }
 }

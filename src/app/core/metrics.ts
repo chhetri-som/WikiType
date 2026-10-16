@@ -1,4 +1,4 @@
-import { CharCounts, Keystroke, SeriesPoint, TestConfig, TestResult } from './models';
+import { CharCounts, Keystroke, Passage, SeriesPoint, TestConfig, TestResult } from './models';
 
 const CHARS_PER_WORD = 5;
 export const ROLLING_WINDOW_SECONDS = 5;
@@ -126,9 +126,11 @@ export function buildResult(
   config: TestConfig,
   log: readonly Keystroke[],
   durationMs: number,
+  passage: Passage | null,
 ): TestResult {
   return {
     config,
+    passage,
     durationMs,
     ...summarize(log, durationMs),
     series: buildSeries(log, durationMs),

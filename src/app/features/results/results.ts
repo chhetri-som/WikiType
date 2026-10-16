@@ -13,6 +13,7 @@ import { ThemeManager } from '../../core/theme-manager';
 export class Results {
   readonly result = input.required<TestResult>();
   readonly restart = output<void>();
+  readonly newPassage = output<void>();
 
   private readonly theme = inject(ThemeManager);
 
