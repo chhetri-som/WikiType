@@ -31,8 +31,18 @@ export interface CharCounts {
   corrected: number;
 }
 
+export interface Passage {
+  text: string;
+  title: string;
+  extract: string;
+  description?: string;
+  sourceUrl: string;
+  revisionId?: number;
+}
+
 export interface TestResult {
   config: TestConfig;
+  passage: Passage | null;
   durationMs: number;
   wpm: number;
   rawWpm: number;
@@ -41,5 +51,4 @@ export interface TestResult {
   chars: CharCounts;
   series: SeriesPoint[],
   log: Keystroke[];
-  // todo: passage
 }

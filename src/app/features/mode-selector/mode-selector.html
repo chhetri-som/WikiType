@@ -1,5 +1,5 @@
 <div class="selector">
-  <div class="modes" role="radiogroup" aria-label="Mode">
+  <div class="modes" [class.time]="mode() === 'time'" role="radiogroup" aria-label="Mode">
     <span class="thumb" aria-hidden="true"></span>
     @for (m of modes; track m.id) {
       <button
@@ -22,6 +22,7 @@
           step="1"
           [max]="notches().length - 1"
           [value]="index()"
+          [disabled]="isCustom()"
           [attr.aria-valuetext]="valueText()"
           aria-label="Test length"
           (input)="setIndex(range.value)"

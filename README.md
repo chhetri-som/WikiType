@@ -13,21 +13,9 @@ Built with **Angular only**. No backend, no database, no accounts. Everything ru
 3. [Architecture](#3-architecture)
 4. [Tech stack](#4-tech-stack)
 5. [Project structure](#5-project-structure)
-6. [Data models](#6-data-models)
-7. [Topic manifest](#7-topic-manifest)
-8. [Wikipedia pipeline](#8-wikipedia-pipeline)
-9. [Typing engine](#9-typing-engine)
-10. [Modes and presets](#10-modes-and-presets)
-11. [Metrics](#11-metrics)
-12. [Results graph](#12-results-graph)
-13. [Feedback engine](#13-feedback-engine)
-14. [UI and UX notes](#14-ui-and-ux-notes)
-15. [Licensing and attribution](#15-licensing-and-attribution)
-16. [Error handling and edge cases](#16-error-handling-and-edge-cases)
-17. [Testing strategy](#17-testing-strategy)
-18. [Build roadmap](#18-build-roadmap)
-19. [Setup](#19-setup)
-20. [Future ideas](#20-future-ideas)
+6. [Wikipedia pipeline](#6-wikipedia-pipeline)
+7. [Error handling and edge cases](#7-error-handling-and-edge-cases)
+8. [Build roadmap](#8-build-roadmap)
 
 ---
 
@@ -106,22 +94,16 @@ idle ──first keystroke──► running ──(last char typed | timer hits 
 
 ## 4. Tech stack
 
-| Concern | Choice |
-|---|---|
-| Framework | Angular (latest stable), standalone components, signals |
-| Language | TypeScript (strict mode) |
-| Styling | SCSS |
-| Theming | CSS custom properties (`--wt-*`) driven by a typed palette in `core/themes.ts` |
-| Font | Local `.ttf` bundled through `@font-face` in `styles.scss` |
-| Charts | Chart.js via `ng2-charts` |
-| HTTP | Angular `HttpClient` |
-| Text parsing | Browser `DOMParser` (no extra library) |
-| Testing | Jasmine/Karma or Jest (whichever the CLI generates), plus Angular TestBed |
-| Data source | Wikipedia Action API |
-
-> Angular's signal and template syntax has changed across versions. Run `ng version` and keep the generated project's conventions when copying snippets.
-
-> This project is on Angular 22. Services use `@Service()` (the short form of a root-provided `@Injectable`), components are `OnPush` and the app is zoneless by default, so reactive state belongs in signals.
+| Concern | Choice                                                                         |
+|---|--------------------------------------------------------------------------------|
+| Framework | Angular (22.2.1), standalone components, signals                               |
+| Language | TypeScript (strict mode)                                                       |
+| Styling | SCSS                                                                           |
+| Font | Local `.ttf` bundled through `@font-face` in `styles.scss`                     |
+| Charts | Chart.js via `ng2-charts`                                                      |
+| HTTP | Angular `HttpClient`                                                           |
+| Text parsing | Browser `DOMParser` (no extra library)                                         |
+| Data source | Wikipedia Action API                                                           |
 
 ---
 
@@ -132,118 +114,36 @@ wikitype/
 ├── public/                         # (or src/assets/ on older Angular versions)
 │   └── topics.json                 # curated topic manifest
 ├── src/
-│   ├── fonts/                      # local .ttf files, referenced from styles.scss
 │   ├── styles.scss                 # global: @font-face, base styles
+│   ├── main.ts                     # config for bootstrap and app
+│   ├── index.html                  # big daddy
+│   ├── fonts/                      # local .ttf files, referenced from styles.scss
 │   └── app/
 │       ├── core/
+│       │   ├── metrics.ts          # WPM, accuracy, consistency etc.
+│       │   ├── modes.ts            # presets, custom limits, config, etc.
 │       │   ├── models.ts           # shared types
-│       │   ├── themes.ts           # THE palette file: all theme colors live here
 │       │   ├── theme-manager.ts    # applies the active theme, persists the choice
-│       │   ├── typing-engine.service.ts
-│       │   ├── wikipedia.service.ts
-│       │   ├── passage.service.ts
-│       │   ├── cache.service.ts
-│       │   ├── text-cleaner.ts     # pure functions
-│       │   ├── metrics.ts          # pure functions
-│       │   └── feedback.ts         # pure functions
+│       │   ├── themes.ts           # THE palette file: all theme colors live here
+│       │   ├── typing-engine.ts    # state machine, timer, live stats
 │       ├── features/
-│       │   ├── mode-selector/
-│       │   ├── typing-arena/
-│       │   ├── context-panel/
+│       │   ├── mode-selector/      
+│       │   ├── results/
 │       │   ├── theme-picker/
-│       │   └── results/
-│       ├── app.ts
-│       └── app.routes.ts
+│       │   └── typing-arena/
+│       ├── app.config.ts
+│       ├── app.html
+│       ├── app.scss
+│       ├── app.routes.ts
+│       └── app.ts
 └── README.md
 ```
 
 ---
 
-## 6. Data models
+## 6. Wikipedia pipeline
 
-```ts
-export type Status = 'idle' | 'running' | 'finished';
-export type CharState = 'pending' | 'correct' | 'wrong';
-export type Mode = 'words' | 'time';
-
-export interface Keystroke {
-  t: number;               // ms since the first key
-  expected: string | null; // char you should have typed (null for Backspace)
-  typed: string;           // key pressed ('Backspace' for deletes)
-  correct: boolean;
-}
-
-export interface TestConfig {
-  mode: Mode;
-  words?: number;          // words mode
-  seconds?: number;        // time mode
-}
-
-export interface Topic {
-  id: string;
-  page: string;            // Wikipedia article title
-  section: string;         // section heading to pull from
-  category: string;        // e.g. "Medieval", "Ancient", "Modern"
-  context: string;         // hand-written intro blurb
-}
-
-export interface Passage {
-  topicId: string;
-  title: string;
-  section: string;
-  text: string;
-  wordCount: number;
-  context: string;
-  sourceUrl: string;       // link to the page + section anchor
-  revisionId?: number;
-}
-
-export interface TestResult {
-  config: TestConfig;
-  passage: Passage;
-  durationMs: number;
-  wpm: number;
-  rawWpm: number;
-  accuracy: number;        // 0-100
-  consistency: number;     // 0-100
-  log: Keystroke[];
-}
-```
-
----
-
-## 7. Topic manifest
-
-`topics.json` is where the "intentional topics" control lives. You curate it by hand.
-
-```json
-[
-  {
-    "id": "fall-of-constantinople",
-    "page": "Fall of Constantinople",
-    "section": "Siege",
-    "category": "Medieval",
-    "context": "In 1453, Ottoman forces under Mehmed II ended the Byzantine Empire after a siege of roughly fifty days. The fall of the city is often used to mark the end of the Middle Ages."
-  }
-]
-```
-
-### Curation checklist for each topic
-- [ ] The section is mostly **prose paragraphs** (not lists or tables).
-- [ ] The section has enough text for your longest test. Rough target: 400+ words for time-mode presets, and at least a few paragraphs.
-- [ ] The text is free of heavy foreign-language names, equations, or symbols.
-- [ ] You wrote a 2-4 sentence `context` blurb that adds value beyond the passage.
-- [ ] The section heading matches Wikipedia **exactly** (case and punctuation).
-
-### Tips
-- Start with 15-20 topics in one or two categories, then grow.
-- Add an optional `approxWords` field later if you want to filter topics by length without fetching.
-
----
-
-## 8. Wikipedia pipeline
-
-### 8.1 Endpoints
+### 6.1 Endpoints
 
 Base: `https://en.wikipedia.org/w/api.php`
 
@@ -256,7 +156,7 @@ Base: `https://en.wikipedia.org/w/api.php`
 - The `parse` API needs a section **index**, not a name, so you first fetch the section list and match `line === topic.section` to get the index.
 - Wikimedia asks clients to identify themselves. Browsers cannot set `User-Agent`, but the API accepts an `Api-User-Agent` header. Adding a custom header triggers a CORS preflight, so verify it works and check Wikimedia's current API etiquette docs when you implement this.
 
-### 8.2 Flow
+### 6.2 Flow
 
 ```
 PassageService.getPassage(config)
@@ -269,7 +169,7 @@ PassageService.getPassage(config)
   7. return Passage { text, context, sourceUrl, ... }
 ```
 
-### 8.3 Text cleaning (`text-cleaner.ts`)
+### 6.3 Text cleaning (`text-cleaner.ts`)
 
 Parse the HTML with `DOMParser`, remove noise **structurally**, then normalize the text.
 
@@ -311,7 +211,7 @@ export function cleanText(html: string): string[] {
 }
 ```
 
-### 8.4 Passage assembly
+### 6.4 Passage assembly
 
 Goal: turn an array of paragraphs into exactly the text a test needs.
 
@@ -340,7 +240,7 @@ wordsNeeded = (seconds / 60) * 250     // assumes a very fast 250 WPM ceiling
 2. Pull the next adjacent section of the same page, or
 3. Pick a different topic that has enough text (preferred for long tests).
 
-### 8.5 Caching (`cache.service.ts`)
+### 6.5 Caching (`cache.service.ts`)
 
 - **Layer 1:** in-memory `Map<string, CachedEntry>` for the current session.
 - **Layer 2:** `sessionStorage` under keys like `wt:v1:{page}:{section}`.
@@ -350,226 +250,7 @@ wordsNeeded = (seconds / 60) * 250     // assumes a very fast 250 WPM ceiling
 
 ---
 
-## 9. Typing engine
-
-Implemented in `typing-engine.service.ts`.
-
-### State (signals)
-
-| Signal | Meaning |
-|---|---|
-| `text` | the target passage |
-| `typed` | everything typed so far (single source of truth) |
-| `status` | `idle`, `running`, or `finished` |
-| `cursor` | computed: `typed().length` |
-| `chars` | computed: per-character `{ ch, state }` for rendering |
-
-`log: Keystroke[]` is a plain array, not a signal, because nothing needs to react to it live.
-
-### Behaviors
-- First keystroke moves `idle → running` and starts the clock (`performance.now()`).
-- Backspace removes the last character and is logged.
-- Words mode finishes when `typed.length === text.length`.
-- Time mode finishes when the timer reaches 0 (to be added in Phase 2).
-- Keys with Ctrl, Meta, or Alt are ignored so browser shortcuts still work.
-- `preventDefault()` on handled keys stops Space from scrolling the page.
-
-### Planned engine extensions
-- A `config` signal and `remainingMs` signal for time mode.
-- A `finish()` method that freezes the log and emits a `TestResult`.
-- Stop accepting input past the end of the text.
-- Optional: stop-on-error or "must correct" mode.
-
----
-
-## 10. Modes and presets
-
-```ts
-export const WORD_PRESETS = [20, 40, 60, 120] as const;
-export const TIME_PRESETS = [20, 40, 60, 120] as const;   // seconds
-
-export const CUSTOM_LIMITS = {
-  words:   { min: 5, max: 500 },
-  seconds: { min: 5, max: 600 },
-};
-```
-
-### Selector behavior
-1. A toggle chooses **Words** or **Time**.
-2. A **snap slider** moves between notches: the four presets, plus a final **Custom** notch.
-3. Landing on Custom reveals a number input, validated against `CUSTOM_LIMITS`.
-4. Changing mode or value loads a fresh passage and resets to `idle`.
-
-> Time presets are in **seconds**, matching Monkeytype. Change `TIME_PRESETS` in one place if you want minutes instead.
-
----
-
-## 11. Metrics
-
-All functions live in `metrics.ts` and are pure.
-
-| Metric | Formula |
-|---|---|
-| **Net WPM** | `(correctChars / 5) / minutes` |
-| **Raw WPM** | `(totalTypedChars / 5) / minutes` |
-| **Accuracy** | `correctKeystrokes / totalKeystrokes × 100` |
-| **Consistency** | based on the coefficient of variation of per-second WPM: `max(0, 100 - CV × 100)` |
-
-- A "word" is 5 characters, the standard typing-test convention.
-- `correctChars` is measured on the **final** typed text (what remains after corrections).
-- `accuracy` is measured on **all keystrokes** (including ones later corrected), so it reflects mistakes you actually made.
-- Exclude Backspace keystrokes from the accuracy denominator, or count them separately. Decide once and document it in the code.
-
----
-
-## 12. Results graph
-
-Chart.js line chart rendered with `ng2-charts`.
-
-### Datasets
-1. **Net WPM** per second (main line)
-2. **Raw WPM** per second (lighter line)
-3. **Errors** as red points on the timeline (a scatter dataset or point styling)
-
-Colors come from the active theme: net WPM = `accent`, raw WPM = `muted`, errors = `wrong`. Chart.js draws on a canvas and cannot read `var(--wt-*)`, so read `ThemeManager.current().tokens` and build the chart options inside a `computed()`. The chart then recolors itself when the theme changes.
-
-### Computing the series
-1. Bucket the log by whole seconds from `t`.
-2. For each second `s`, compute WPM from characters typed.
-3. Use a **rolling window** (for example 5 seconds) for the plotted line. Cumulative averages are too flat and per-second values are too noisy.
-4. Mark seconds containing at least one incorrect keystroke as error points.
-
-### Below the chart
-Stat cards: WPM, raw WPM, accuracy, consistency, time, characters (correct/wrong/corrected).
-
----
-
-## 13. Feedback engine
-
-Rule-based. Each rule is a pure function `(log, series) => Insight | null`. Show the top 3-4 insights by severity.
-
-```ts
-export interface Insight {
-  id: string;
-  severity: 'info' | 'tip' | 'warning';
-  title: string;
-  message: string;
-}
-```
-
-| Rule | Signal | Example message |
-|---|---|---|
-| **Consistency** | High CV of per-second WPM | "Your speed swung a lot. A steadier rhythm will lift your average." |
-| **Fatigue / warm-up** | Second-half WPM vs first-half WPM | "You slowed about 15% in the second half." / "You started slow and sped up." |
-| **Problem keys** | Error rate per expected character, minimum sample size | "You miss 'q' and 'z' most often." |
-| **Problem bigrams** | Error rate per two-letter pair | "Transitions like 'th' and 'ou' cost you the most." |
-| **Hesitation** | Inter-key gaps above a threshold (for example >500 ms, or 3× your median) | "You paused before capital letters and numbers." |
-| **Error bursts** | Several errors inside a short window | "Most mistakes happened between 0:35 and 0:42." |
-| **Accuracy vs speed** | Raw WPM minus net WPM gap | "Slowing down a little would cost you less than your corrections do." |
-| **Positive feedback** | High accuracy or improving trend | "Clean run: 98% accuracy." |
-
-### Guidelines
-- Always require a **minimum sample size** before reporting (a 12-word test cannot support a "fatigue" insight).
-- Keep thresholds in a single constants object so they are easy to tune.
-- Include at least one positive insight when the data supports it.
-- Tests with the same passage text can later be compared for a fairer signal.
-
----
-
-## 14. UI and UX notes
-
-### Layout (top to bottom)
-1. Mode selector (toggle + slider)
-2. Typing arena
-3. Context panel
-4. Results (replaces or follows the arena after finishing)
-
-### Context panel
-- **During the test:** dimmed or collapsed. Reading about the passage mid-test is distracting.
-- **After the test:** expands with the hand-written blurb, article title, section name, and a prominent **"Read on Wikipedia"** link to the section anchor.
-- This is a design choice, so make it a setting if you prefer it always visible.
-
-### Interaction
-- The arena is focusable (`tabindex="0"`) and auto-focuses on load.
-- Clicking away shows a "click to focus" hint.
-- Shortcuts to consider: `Tab` to restart, `Esc` to load a new passage.
-- Responsive: the arena keeps a readable max width and wraps cleanly on small screens.
-
-### Theming
-
-One palette file, many themes. Components never contain a hex color. They only use CSS variables, and a single TypeScript file defines what those variables are.
-
-**How it fits together**
-
-```
-core/themes.ts          THEMES array: id, label, scheme, six color tokens each
-        │
-core/theme-manager.ts   signal holding the selected id
-        │               effect() writes tokens to <html> as --wt-* variables
-        │               saves/loads the id in localStorage (wt:theme)
-        ▼
-component SCSS          color: var(--wt-text);  background: var(--wt-bg);
-features/theme-picker   renders one swatch button per theme, calls select(id)
-```
-
-**Tokens**
-
-| Token | CSS variable | Used for |
-|---|---|---|
-| `bg` | `--wt-bg` | page background |
-| `surface` | `--wt-surface` | panels, cards, chart background, context panel |
-| `text` | `--wt-text` | correct characters, headings, body text |
-| `muted` | `--wt-muted` | pending characters, secondary text, raw WPM line |
-| `accent` | `--wt-accent` | cursor, active controls, links, net WPM line |
-| `wrong` | `--wt-wrong` | wrong characters, error markers |
-
-A seventh value, `scheme` (`'light'` or `'dark'`), is set as `color-scheme` on `<html>` so scrollbars and form controls match the theme.
-
-**The four themes**
-
-| Id | Label | Scheme | bg | surface | text | muted | accent | wrong |
-|---|---|---|---|---|---|---|---|---|
-| `dusk` (default) | Dusk | dark | `#323437` | `#2c2e31` | `#d1d0c5` | `#646669` | `#e2b714` | `#ca4754` |
-| `paper` | Paper | light | `#f4efe6` | `#e9e2d3` | `#2b2b2b` | `#9a9488` | `#b4540a` | `#c0392b` |
-| `frost` | Frost | dark | `#2e3440` | `#3b4252` | `#eceff4` | `#6c7a96` | `#88c0d0` | `#bf616a` |
-| `forest` | Forest | dark | `#10201a` | `#172c24` | `#cfe8d5` | `#4f7a62` | `#8fd694` | `#e0645c` |
-
-**Rules**
-- To add a theme, add one object to `THEMES`. The picker, the CSS variables, and the chart all pick it up with no other change.
-- To add a token, add it to `ThemeTokens` and to every theme (TypeScript will refuse to compile until you do), then use it as `var(--wt-name)`.
-- No hard-coded colors in component SCSS. Everything goes through `var(--wt-*)`.
-- Only the theme id is persisted. If storage is unavailable, fall back to `dusk` silently.
-- Respect `prefers-reduced-motion`: the background/color transition on theme change is disabled for those users.
-
-**Font**
-- Place the `.ttf` in `src/fonts/` and declare it with `@font-face` in `styles.scss` using a relative `url()`, so the Angular build bundles it and rewrites the path (this also keeps working under a sub-path such as GitHub Pages).
-- Expose it as `--wt-font` with a monospace fallback stack, and use `var(--wt-font)` everywhere, including form controls (`button { font: inherit; }`).
-- Prefer a monospace face so characters align with the cursor. Use `font-display: swap` so text is visible while the font loads.
-
-### Accessibility
-- Do not rely on color alone for wrong characters (the underline helps).
-- Provide an `aria-live` region for the results summary.
-- Respect `prefers-reduced-motion` for animations.
-- Every theme must keep `text` on `bg` at 4.5:1 contrast or better. `muted` (pending text) is dimmer by design, but check it and `wrong` by eye in each theme. The underline on wrong characters covers cases where color is not enough.
-- The theme picker is a `radiogroup` of buttons with `aria-checked`, and is fully keyboard operable.
-
----
-
-## 15. Licensing and attribution
-
-Wikipedia text is licensed under **CC BY-SA 4.0**. To stay compliant:
-
-- Show clear attribution: article title, section, and a link to the source page.
-- Link to the page's history or license (Wikipedia's page footer has these).
-- Note that content is under CC BY-SA 4.0, for example in the footer.
-- Your own hand-written context blurbs are yours. Keep them visually distinct from Wikipedia text.
-- The text is lightly modified (cleaned and trimmed), and the attribution makes that transparent. Consider noting "modified for typing."
-
-Double-check Wikimedia's current reuse guidelines before publishing.
-
----
-
-## 16. Error handling and edge cases
+## 7. Error handling and edge cases
 
 | Case | Handling |
 |---|---|
@@ -585,50 +266,24 @@ Double-check Wikimedia's current reuse guidelines before publishing.
 
 ---
 
-## 17. Testing strategy
-
-**Unit tests (highest value, easiest):**
-- `cleanText`: feed sample Wikipedia HTML snippets and assert output.
-- `normalize`: quotes, dashes, diacritics, citation markers, IPA.
-- `assemble`: word-count trimming, sentence-boundary preference, wrap-around.
-- `metrics`: known logs produce known WPM, accuracy, and consistency.
-- `feedback`: each rule fires, and does not fire, on crafted logs.
-
-**Service tests:**
-- `TypingEngine`: idle-to-running transition, backspace, finish condition, log contents.
-- `WikipediaService`: use `HttpTestingController` to mock the API.
-
-**Component tests:**
-- Arena renders the right classes for correct, wrong, and pending characters.
-- Mode selector emits the right config for each slider notch.
-
-**Manual QA checklist:**
-- [ ] Type a full passage with no mistakes
-- [ ] Type with deliberate errors and backspaces
-- [ ] Switch modes mid-session
-- [ ] Offline behavior after one successful fetch
-- [ ] Mobile viewport
-
----
-
-## 18. Build roadmap
+## 8. Build roadmap
 
 ### Phase 1: Typing engine (Angular only)
 - [x] Scaffold project: `ng new wikitype --style=scss`
 - [x] `models.ts`, `TypingEngine` service, `TypingArena` component
 - [x] Verify typing, backspace, cursor, and keystroke log in the browser
 - [x] Challenge: live correct/wrong counts with `computed()`
-- [ ] Bundle a local `.ttf` and apply it globally with `@font-face`
-- [ ] `core/themes.ts` palette, `ThemeManager` service, `ThemePicker` component
-- [ ] Replace every hard-coded color in component SCSS with `var(--wt-*)`
-- [ ] Replace the boilerplate `.spec.ts` files with real tests for `TypingEngine`
+- [x] Bundle a local `.ttf` and apply it globally with `@font-face`
+- [x] `core/themes.ts` palette, `ThemeManager` service, `ThemePicker` component
+- [x] Replace every hard-coded color in component SCSS with `var(--wt-*)`
+- [x] Replace the boilerplate `.spec.ts` files with real tests for `TypingEngine`
 
 ### Phase 2: Modes, metrics, graph
-- [ ] Timer and `remainingMs` signal for time mode
-- [ ] Live WPM and accuracy display
-- [ ] Mode selector with snap slider and custom input
-- [ ] `metrics.ts` with unit tests
-- [ ] Results view with Chart.js line chart and stat cards
+- [x] Timer and `remainingMs` signal for time mode
+- [x] Live WPM and accuracy display
+- [x] Mode selector with snap slider and custom input
+- [x] `metrics.ts` with unit tests
+- [x] Results view with Chart.js line chart and stat cards
 
 ### Phase 3: Wikipedia pipeline
 - [ ] Write 10-20 entries in `topics.json`
@@ -649,55 +304,5 @@ Double-check Wikimedia's current reuse guidelines before publishing.
 - [ ] Restart and new-passage shortcuts
 - [ ] Responsive layout and accessibility pass
 - [ ] Deploy as a static site (GitHub Pages, Netlify, Vercel, or Cloudflare Pages)
-
----
-
-## 19. Setup
-
-### Prerequisites
-- Node.js (LTS)
-- Angular CLI: `npm install -g @angular/cli`
-- A code editor (VS Code with the Angular Language Service extension works well)
-
-### Create and run
-
-```bash
-ng new wikitype --style=scss
-cd wikitype
-ng generate service core/typing-engine
-ng generate component features/typing-arena
-ng serve
-```
-
-Open `http://localhost:4200`.
-
-### Later dependencies
-
-```bash
-npm install chart.js ng2-charts
-```
-
-### Production build
-
-```bash
-ng build
-```
-
-The output in `dist/` is a static site you can host anywhere.
-
----
-
-## 20. Future ideas (Currently Out-of-scope)
-
-- Topic picker UI by category or era
-- "Retry the same passage" to measure improvement
-- Per-word timing heatmap on the finished passage
-- Compare against your previous test in the same session
-- Punctuation and capitalization focus drills
-- Keyboard layout awareness (Dvorak, Colemak)
-- Export results as an image or JSON
-- Offline PWA mode with a bundled snapshot of passages
-- Support for other Wikipedia languages
-- Quote-of-the-passage: highlight an interesting sentence in the context panel
 
 ---
